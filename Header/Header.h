@@ -1,6 +1,13 @@
+//----------------------------------------------------------------------------
+//   Copyright (C) 2022-2022 N.Schuetz.
+//   This program contains proprietary and confidential information.
+//   All rights reserved, except as may be permitted by prior written consent.
+//----------------------------------------------------------------------------
 //
 // Basic UEFI Libraries
 //
+#ifndef HEADER_HEADER_H_
+#define HEADER_HEADER_H_
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -28,3 +35,5 @@
 #include <Protocol\ShellParameters.h>
 
 INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv);
+
+#endif         // HEADER_HEADER_H_
