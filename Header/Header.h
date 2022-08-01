@@ -36,4 +36,4 @@
 
 INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv);
 
-#endif         // HEADER_HEADER_H_
+#endif // HEADER_HEADER_H_
