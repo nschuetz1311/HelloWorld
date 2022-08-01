@@ -1,3 +1,8 @@
+//----------------------------------------------------------------------------
+//   Copyright (C) 2022-2022 N.Schuetz.
+//   This program contains proprietary and confidential information.
+//   All rights reserved, except as may be permitted by prior written consent.
+//----------------------------------------------------------------------------
 #include "..\Header\Header.h"
 
 //
