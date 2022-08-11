@@ -12,5 +12,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Uncrustify
         run: sudo apt-get install uncrustify=0.69.0+dfsg1-1build1
-      - name: Check For Trailing Whitespace
-      - uses: harupy/find-trailing-whitespace@master
+      - name: Find Trailing Whitespace
+         # You may pin to the exact commit or the version.
+         # uses: harupy/find-trailing-whitespace@07c9caa0a2bc5f7bad504cf91fae1a0ea8d4c867
+        uses: harupy/find-trailing-whitespace@v1.0
