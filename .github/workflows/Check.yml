@@ -15,3 +15,4 @@ jobs:
       - name: Run Uncrustify
         run: |
           uncrustify --version
+          find HelloWorld/Source -prune -false -o -name "*.[hc]" -exec uncrustify --check -c tools/uncrustify.cfg {} +
