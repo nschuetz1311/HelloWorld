@@ -21,6 +21,6 @@
  */
 INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 	EFI_STATUS Status = 0;
-    
+
 	return Status;
 }
