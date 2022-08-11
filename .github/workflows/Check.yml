@@ -1,0 +1,16 @@
+name: test formatting
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Find Trailing Whitespace
+         # You may pin to the exact commit or the version.
+         # uses: harupy/find-trailing-whitespace@07c9caa0a2bc5f7bad504cf91fae1a0ea8d4c867
+        uses: harupy/find-trailing-whitespace@v1.0
