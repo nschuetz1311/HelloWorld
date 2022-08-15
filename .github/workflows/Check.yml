@@ -1,4 +1,4 @@
-name: test formatting
+name: Build Runner
 
 on:
   push:
@@ -6,11 +6,47 @@ on:
   workflow_dispatch:
 
 jobs:
-  formatting:
+  check_whitespaces:
     runs-on: ubuntu-latest
+    name: Check for trailing whitespaces
     steps:
       - uses: actions/checkout@v2
       - name: Find Trailing Whitespace
-         # You may pin to the exact commit or the version.
-         # uses: harupy/find-trailing-whitespace@master
         uses: harupy/find-trailing-whitespace@v1.0
+
+  start_build:
+    runs-on: windows-latest
+    name: Setup environment
+    defaults:
+      run:
+        shell: cmd
+    steps:
+    - name: Setup VS Dev Environment
+      uses: seanmiddleditch/gha-setup-vsdevenv@v4
+    - name: Set up NASM
+      uses: ilammy/setup-nasm@v1.3.0
+    - name: Get VisualUefi
+      uses: actions/checkout@v3
+      with:
+       repository: nschuetz1311/VisualUefi
+       submodules: 'recursive'
+
+    # There should be a way to split this process.
+    # Maybe by including the Lib-artifatcs, to increase build speed.
+    - name: Build Libs and App
+      run: |
+        cd EDK-II
+        devenv EDK-II.sln /build
+        cd ..\\Applications\\HelloWorld
+        devenv Helloworld.sln /build
+
+    - name: Store artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        # Artifact name
+        name: EfiOutput
+        # path to the output file
+        # should use the repo name variable instead of hardcoded name
+        path: Applications\\HelloWorld\\x64\\Release
+        if-no-files-found: error
+        retention-days: 5
