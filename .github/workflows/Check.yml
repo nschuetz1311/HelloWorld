@@ -37,7 +37,7 @@ jobs:
       run: |
         cd EDK-II
         devenv EDK-II.sln /build
-        cd ..\\Applications\\HelloWorld
+        cd ..\\Applications\\${{ github.event.repository.name }}
         devenv Helloworld.sln /build
 
     - name: Store artifacts
