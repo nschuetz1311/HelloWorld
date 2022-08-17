@@ -38,7 +38,7 @@ jobs:
         cd EDK-II
         devenv EDK-II.sln /build
         cd ..\\Applications\\${{ github.event.repository.name }}
-        devenv Helloworld.sln /build
+        devenv ${{ github.event.repository.name }}.sln /build
 
     - name: Store artifacts
       uses: actions/upload-artifact@v3
@@ -47,6 +47,6 @@ jobs:
         name: EfiOutput
         # path to the output file
         # should use the repo name variable instead of hardcoded name
-        path: Applications\\HelloWorld\\x64\\Release
+        path: Applications\\${{ github.event.repository.name }}\\x64\\Release
         if-no-files-found: error
         retention-days: 5
