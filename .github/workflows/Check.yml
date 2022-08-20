@@ -21,10 +21,8 @@ jobs:
       run:
         shell: cmd
     steps:
-    - name: Setup VS Dev Environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v4
-    - name: Set up NASM
-      uses: ilammy/setup-nasm@v1.3.0
+    - name: Add NASM and DevEnv to PATH
+      uses: nschuetz1311/VisualUefiCompositeAction@main
     - name: Get VisualUefi
       uses: actions/checkout@v3
       with:
