@@ -17,6 +17,7 @@ jobs:
   start_build:
     runs-on: windows-latest
     name: Setup environment
+    needs: 'check_whitespaces'
     defaults:
       run:
         shell: cmd
@@ -31,11 +32,13 @@ jobs:
 
     # There should be a way to split this process.
     # Maybe by including the Lib-artifatcs, to increase build speed.
-    - name: Build Libs and App
+    - name: Build Libs
       run: |
         cd EDK-II
         devenv EDK-II.sln /build
-        cd ..\\Applications\\${{ github.event.repository.name }}
+    - name: Build App
+      run: |
+        cd Applications\\${{ github.event.repository.name }}
         devenv ${{ github.event.repository.name }}.sln /build
 
     - name: Store artifacts
