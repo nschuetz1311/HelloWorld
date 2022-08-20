@@ -28,6 +28,28 @@ STATIC VOID PrintVersion (
 }
 
 /**
+ * @brief Init Routine
+ *
+ * This routine initializes the protocols used in this application.
+ *
+ * @return EFI_STATUS
+ */
+EFI_STATUS EFIAPI InitRoutine (VOID) {
+	EFI_STATUS	Status = EFI_SUCCESS;
+
+	Status |= gBS->LocateProtocol (&gEfiDevicePathToTextProtocolGuid,
+					NULL, (VOID **)&pDevicePathToText);
+
+	Status |= gBS->LocateProtocol (&gEfiUnicodeCollation2ProtocolGuid,
+					NULL,(VOID **)&pUnicodeCollation);
+
+	Status |= gBS->LocateProtocol (&gEfiSimpleTextInProtocolGuid,
+					NULL, (VOID **)&pTextInput);
+
+	return Status;
+
+}
+/**
  * UEFI application entry point which has an interface similar to a
  * standard C main function.
  *
@@ -45,14 +67,7 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 	EFI_STATUS	Status = EFI_SUCCESS;
 	EFI_INPUT_KEY	Key;
 
-	Status |= gBS->LocateProtocol (&gEfiDevicePathToTextProtocolGuid,
-					NULL, (VOID **)&pDevicePathToText);
-
-	Status |= gBS->LocateProtocol (&gEfiUnicodeCollation2ProtocolGuid,
-					NULL,(VOID **)&pUnicodeCollation);
-
-	Status |= gBS->LocateProtocol (&gEfiSimpleTextInProtocolGuid,
-					NULL, (VOID **)&pTextInput);
+	Status = InitRoutine();
 
 	if (EFI_ERROR (Status)) {
 		Print (L"Error: Locating Protocols failed %r \n" ,Status);
