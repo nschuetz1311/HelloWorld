@@ -50,11 +50,105 @@ EFI_STATUS EFIAPI InitRoutine (VOID) {
 
 }
 /**
+ * @brief		reAllocatepool
+ *
+ *			This function reallocates the pool for
+ *			previously allocated variable by its own size,
+ *			so it doubles the original size and returns
+ *			the newly generated array. The input array is freed
+ *			after the data was transcribed.
+ *
+ * @param PoolType	The type of pool to allocate.
+ *			MemoryType values in the range 0x70000000..0x7FFFFFFF
+ *			are reserved for OEM use. MemoryType values in the range
+ *			0x80000000..0xFFFFFFFF are reserved for use
+ *			by UEFI OS loaders that are provided
+ *			by operating system vendors.
+ * @param Size		The number of bytes to allocate from the pool
+ *			and returns the number of bytes allocated
+ *			to the new pool.
+ * @param Array		A pointer to a pointer to the allocated buffer
+ * 			if the call succeeds undefined otherwise.
+ * @return EFI_STATUS
+ */
+EFI_STATUS EFIAPI reAllocatepool (
+	IN EFI_MEMORY_TYPE PoolType,
+	IN OUT UINTN       *Size,
+	IN OUT VOID        **Array
+)
+{
+	EFI_STATUS	Status = EFI_SUCCESS;
+	CHAR16		*Temp;
+
+	*Size = *Size * 2;
+	Status = gBS->AllocatePool (PoolType, (*Size * sizeof(CHAR16)),
+							(VOID **)&Temp);
+	gBS->CopyMem (Temp, (VOID **)Array, *Size / 2);
+	gBS->FreePool (Array);
+	Array = &Temp;
+
+	return (Status);
+} // reAllocatepool
+
+/**
+ * @brief
+ *
+ * @param Exclusion
+ * @param String
+ * @param Counter
+ * @return BOOLEAN
+ */
+BOOLEAN ReadKeyBoard (
+	IN CHAR16 *Exclusion,
+	OUT CHAR16 **String,
+	IN UINTN Counter
+)
+{
+	EFI_INPUT_KEY	Key;
+	UINTN		Size = 10;
+	UINTN		EventIndex;
+
+	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
+	gBS->AllocatePool (EfiBootServicesData, Size, (VOID **)String);
+	while ((Key.UnicodeChar != CHAR_CARRIAGE_RETURN) &&
+						(Key.ScanCode != SCAN_ESC)) {
+
+		gBS->WaitForEvent (1, &gST->ConIn->WaitForKey, &EventIndex);
+		gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
+
+		if (((Exclusion != NULL) && (Key.UnicodeChar != *Exclusion) ) ||
+							(Exclusion == NULL)) {
+			*(*String + Counter) = Key.UnicodeChar;
+			Print (L"%c", *(*String + Counter));
+
+			if ((Key.UnicodeChar == 0x08) && (Counter >= 0)) {
+				Print (L" \b");
+				Counter--;
+			} else if (Counter >= 0) {
+				Counter++;
+			}
+
+			if (Counter >= Size) {
+				reAllocatepool (EfiBootServicesData, &Size,
+							(VOID **)String);
+			}
+		}
+	}
+
+	if (Key.UnicodeChar == CHAR_CARRIAGE_RETURN) {
+		*(*String + (Counter - 1)) = L'\0';
+		return (TRUE);
+	} else {
+		Print (L"\n");
+		gBS->FreePool ((VOID *)String);
+		return (FALSE);
+	}
+} // ReadKeyBoard
+
+/**
  * UEFI application entry point which has an interface similar to a
  * standard C main function.
  *
- * The ShellCEntryLib library instance wrappers the actual UEFI application
- * entry point and calls this ShellAppMain function.
  *
  * @param[in] Argc	The number of items in Argv.
  * @param[in] Argv	Array of pointers to strings.
@@ -66,6 +160,7 @@ EFI_STATUS EFIAPI InitRoutine (VOID) {
 INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 	EFI_STATUS	Status = EFI_SUCCESS;
 	EFI_INPUT_KEY	Key;
+	CHAR16		*mInput;
 
 	Status = InitRoutine();
 
@@ -78,6 +173,13 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 
 	while (Key.ScanCode != SCAN_ESC) {
 		PrintVersion ();
+
+		if ( ReadKeyBoard (NULL, &mInput, 0) ) {
+			Print (L"Input: %s \n", mInput);
+		} else {
+			continue;
+		}
+
 		break;
 	}
 
