@@ -1,6 +1,6 @@
 name: Build Runner
 
-on: [push, pull_request, label]
+on: [push, pull_request]
 
 jobs:
   check_whitespaces:
@@ -14,7 +14,6 @@ jobs:
   start_build:
     runs-on: windows-latest
     name: Setup environment
-    needs: 'check_whitespaces'
     defaults:
       run:
         shell: cmd
@@ -50,10 +49,10 @@ jobs:
         retention-days: 5
 
   Create_Release:
-    if: github.event == 'label'
+    if: github.event_name == 'push:tag'
     runs-on: windows-latest
-    name: Setup environment
-    needs: 'start_build'
+    name: Create Release
+    # needs: 'start_build'
     defaults:
       run:
         shell: cmd
