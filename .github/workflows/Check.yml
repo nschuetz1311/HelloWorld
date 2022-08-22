@@ -53,9 +53,9 @@ jobs:
     # runs-on: windows-latest
     name: Create Release
     needs: 'start_build'
-    # defaults:
-      # run:
-       # shell: cmd
+    defaults:
+      run:
+       shell: cmd
     steps:
       - run: echo Test
       - name: checkout artifacts
