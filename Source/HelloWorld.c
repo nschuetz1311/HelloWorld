@@ -145,6 +145,15 @@ BOOLEAN ReadKeyBoard (
 	}
 } // ReadKeyBoard
 
+INTN EFIAPI wcsicmp(
+	IN CHAR16 *Str1,
+	IN CHAR16 *Str2
+)
+{
+	return (pUnicodeCollation->StriColl(pUnicodeCollation, Str1, Str2));
+}
+
+
 /**
  * UEFI application entry point which has an interface similar to a
  * standard C main function.
@@ -178,6 +187,9 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 			Print (L"Input: %s \n", mInput);
 		} else {
 			continue;
+		}
+
+		if (wcsicmp(L"-wait", mInput) == 0) {
 		}
 
 		break;
