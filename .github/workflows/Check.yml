@@ -1,6 +1,6 @@
 name: Build Runner
 
-on: [push, pull_request]
+on: [push, pull_request, label]
 
 jobs:
   check_whitespaces:
@@ -48,3 +48,7 @@ jobs:
         path: Applications\\${{ github.event.repository.name }}\\x64\\Release
         if-no-files-found: error
         retention-days: 5
+
+    - name: Create Release
+      if: github.event == 'label'
+      run: echo Test
