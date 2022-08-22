@@ -49,6 +49,13 @@ jobs:
         if-no-files-found: error
         retention-days: 5
 
-    - name: Create Release
-      if: github.event == 'label'
-      run: echo Test
+  Create_Release:
+    if: github.event == 'label'
+    runs-on: windows-latest
+    name: Setup environment
+    needs: 'start_build'
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - run: echo Test
