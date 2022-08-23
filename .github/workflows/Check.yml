@@ -23,8 +23,7 @@ jobs:
     - name: Get VisualUefi
       uses: actions/checkout@v3
       with:
-       repository: nschuetz1311/VisualUefi
-       branch: Test_CI
+       repository: nschuetz1311/VisualUefi@Test_CI
        submodules: 'recursive'
 
     # There should be a way to split this process.
