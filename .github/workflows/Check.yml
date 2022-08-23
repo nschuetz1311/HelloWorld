@@ -50,8 +50,8 @@ jobs:
 
   Create_Release:
     if: |
-        $ {{ "contains(github.event.head_commit.message, '[release]')" &&
-        github.event_name == 'pull_request' }}
+        "contains(github.event.head_commit.message, '[release]')"
+        # && github.event_name == 'pull_request' }}
     runs-on: windows-latest
     name: Create Release
     needs: 'start_build'
