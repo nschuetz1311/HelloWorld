@@ -29,10 +29,8 @@ jobs:
     - name: Test@Niko
       run: |
         dir
-        cd Applications
-        rmdir ${{ github.event.repository.name }}
-        git clone git@github.com:nschuetz1311/HelloWorld.git -b feature-branch
-        cd ${{ github.event.repository.name }}
+        cd Applications\\${{ github.event.repository.name }}
+        git checkout feature-branch
         dir
         cd ..\\..
         dir
