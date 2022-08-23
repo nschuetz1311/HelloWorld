@@ -189,6 +189,8 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 			continue;
 		}
 
+		this_should_be_an_error();
+
 		if (wcsicmp(L"-wait", mInput) == 0) {
 		}
 
