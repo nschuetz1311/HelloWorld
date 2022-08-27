@@ -34,7 +34,7 @@ jobs:
     - name: Get curret repo
       uses: actions/checkout@v3
       with:
-        path: .\\Appications\\${{ github.event.repository.name }}
+        path: .\\Applications\\${{ github.event.repository.name }}
 #        repository: nschuetz1311/HelloWorld
 #        ref: 'SNI_Test'
 #        submodules: 'recursive'
