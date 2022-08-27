@@ -26,14 +26,11 @@ jobs:
        repository: nschuetz1311/VisualUefi
        submodules: 'recursive'
 
-    - name: Test@Niko
-      run: |
-        dir
-        cd Applications\\${{ github.event.repository.name }}
-        git checkout feature-branch
-        dir
-        cd ..\\..
-        dir
+    - name: Get current repo
+      uses: actions/checkout@v3
+      with:
+        path: .\\Applications\\${{ github.event.repository.name }}
+
     # There should be a way to split this process.
     # Maybe by including the Lib-artifatcs, to increase build speed.
     - name: Build Libs
