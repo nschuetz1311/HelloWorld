@@ -70,3 +70,8 @@ jobs:
         uses: actions/download-artifact@v3
         with:
          name: EfiOutput
+      - name: Upload assets
+        uses: nebula-actions/upload-assets@latest
+        with:
+          asset-path: EfiOutput.zip
+          tag: tag
