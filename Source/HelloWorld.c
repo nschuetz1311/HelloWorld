@@ -178,6 +178,75 @@ INTN EFIAPI wcsicmp(
 	return (pUnicodeCollation->StriColl(pUnicodeCollation, Str1, Str2));
 }
 
+EFI_STATUS EFIAPI waitFunc(
+	CHAR16**	TextInput,
+	EFI_INPUT_KEY*	Key,
+	CHAR16*		Selection,
+	UINT64*		Time
+)
+{
+	UINTN RebootCounter;
+	UINTN dataSize;
+
+	PrintdecisionW ();
+	dataSize = sizeof(dataSize);
+	*TextInput = L"counter";
+	gRT->GetVariable (*TextInput, &VendorGuid, &Atts,
+				&dataSize, &RebootCounter);
+	Print (L"RebootNr: %d\n", RebootCounter);
+	Key->UnicodeChar = 0;
+
+	if (!ReadKeyBoard (NULL, &Selection, 0)) {
+		return 1;
+	}
+
+	Print (L"Input: %s \n", Selection);
+	if ((ShellIsHexOrDecimalNumber(Selection, 0, 1)) == 0) {
+		return 1;
+	}
+
+	ShellConvertStringToUint64 (Selection, Time, 0, 1);
+	Print (L"Time chosen: %d s \n", *Time);
+
+	if (ShellIsDecimalDigitCharacter(*Selection)) {
+		Print (L"Input is decimal \n");
+	} else if (ShellIsHexaDecimalDigitCharacter(*Selection)) {
+		Print (L"Input is hex \n");
+	}
+
+	if (*Time > 60) {
+		Print (L"Please enter a value smaller than 60.\n");
+		return 1;
+	}
+
+	Print (L"The System will restart in %d seconds.\
+			\nDo you wish to continue?\n", *Time);
+	if (SingleKeyCheck() != 'y') {
+		Print (L"You aborted the restart. \n");
+		return 1;
+	}
+
+	while ((Key->ScanCode != SCAN_ESC) && (*Time > 0)) {
+		Print (L" Time remaining: %d s \r", *Time);
+		gBS->Stall (1000000);
+		*Time--;
+		gST->ConIn->ReadKeyStroke (gST->ConIn, Key);
+	}
+
+	if (Key->ScanCode != SCAN_ESC) {
+		Print (L"System restarts now \n");
+		gBS->Stall (500000);
+		RebootCounter++;
+		gRT->SetVariable (*TextInput, &VendorGuid, Atts,
+						dataSize, &RebootCounter);
+		gRT->ResetSystem (EfiResetCold, EFI_SUCCESS, 0, NULL);
+	} else {
+		Print (L"Restart was aborted. \n");
+		return 1;
+	}
+
+	return 0;
+}
 
 /**
  * UEFI application entry point which has an interface similar to a
@@ -196,7 +265,7 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 	EFI_INPUT_KEY	Key;
 	CHAR16		*mInput;
 	CHAR16		*TextInput;
-	CHAR16		*Selection;
+	CHAR16		*Selection = NULL;
 	UINT64		Time;
 
 	Status = InitRoutine();
@@ -218,67 +287,11 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 		}
 
 		if (wcsicmp(L"-wait", mInput) == 0) {
-			UINTN RebootCounter;
-			UINTN dataSize;
-
-			PrintdecisionW ();
-			dataSize = sizeof(dataSize);
-			TextInput = L"counter";
-			gRT->GetVariable (TextInput, &VendorGuid, &Atts,
-						&dataSize, &RebootCounter);
-			Print (L"RebootNr: %d\n", RebootCounter);
-			Key.UnicodeChar = 0;
-
-			if ( !ReadKeyBoard (NULL, &Selection, 0) ) {
+			if (waitFunc (&TextInput, &Key, Selection, &Time)){
 				break;
 			}
+		}
 
-			Print (L"Input: %s \n", Selection);
-			if ((ShellIsHexOrDecimalNumber(Selection, 0, 1)) == 0) {
-				break;
-			}
-
-			ShellConvertStringToUint64 (Selection, &Time, 0, 1);
-			Print (L"Time chosen: %d s \n", Time);
-
-			if (ShellIsDecimalDigitCharacter(*Selection)) {
-				Print (L"Input is decimal \n");
-			}
-			else if (ShellIsHexaDecimalDigitCharacter(*Selection)) {
-				Print (L"Input is hex \n");
-			}
-
-			if ( Time > 60 ) {
-				Print (L"Please enter a value smaller\
-							than 60. \n", Time);
-				break;
-			}
-
-			Print (L"The System will restart in %d \
-				seconds.\nDo you wish to continue?\n", Time);
-			if (SingleKeyCheck() != 'y') {
-				Print (L"You aborted the restart. \n");
-				break;
-			}
-			while ((Key.ScanCode != SCAN_ESC) && (Time > 0)) {
-				Print (L" Time remaining: %d s \r", Time);
-				gBS->Stall (1000000);
-				Time--;
-				gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
-			}
-			if (Key.ScanCode != SCAN_ESC) {
-				Print (L"System restarts now \n");
-				gBS->Stall (500000);
-				RebootCounter++;
-				gRT->SetVariable (TextInput, &VendorGuid,
-						Atts, dataSize, &RebootCounter);
-				gRT->ResetSystem (EfiResetCold, EFI_SUCCESS,
-								0, NULL);
-			}
-			else {
-				Print (L"Restart was aborted. \n");
-				break;
-			}
 		}
 
 		break;
