@@ -40,7 +40,7 @@ jobs:
     - name: Test2@Niko
       run: |
         dir
-        cd ..
+        cd ..\\..
     # There should be a way to split this process.
     # Maybe by including the Lib-artifatcs, to increase build speed.
     - name: Build Libs
