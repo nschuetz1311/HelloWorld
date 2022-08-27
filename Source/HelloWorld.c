@@ -12,6 +12,8 @@ static EFI_SIMPLE_TEXT_INPUT_PROTOCOL	*pTextInput;
 UINT32 Atts = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS
 					| EFI_VARIABLE_BOOTSERVICE_ACCESS;
 
+EFI_GUID VendorGuid = EFI_GUID_TEST;
+
 STATIC VOID PrintVersion (
 	VOID
 )
@@ -25,6 +27,15 @@ STATIC VOID PrintVersion (
 			choosing the boot option.\n");
 	Print (L"to reboot please enter -wait, to modify a txt\
 			file -text and so on...\n");
+}
+
+VOID PrintdecisionW (
+	VOID
+)
+{
+  Print (L"You now can enter your desired reboot delay time \n");
+  Print (L"But please keep in mind to choose a value smaller than 60s. \n");
+  Print (L"Your submission can be entered as a Hex or decimal number\n");
 }
 
 /**
@@ -49,6 +60,20 @@ EFI_STATUS EFIAPI InitRoutine (VOID) {
 	return Status;
 
 }
+
+CHAR16 SingleKeyCheck (
+	VOID
+)
+{
+	EFI_INPUT_KEY Key;
+	UINTN EventIndex;
+	CHAR16 String;
+	gBS->WaitForEvent (1, &gST->ConIn->WaitForKey, &EventIndex);
+	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
+	String = Key.UnicodeChar;
+	return (String);
+} // SingleKeyCheck
+
 /**
  * @brief		reAllocatepool
  *
@@ -170,6 +195,9 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 	EFI_STATUS	Status = EFI_SUCCESS;
 	EFI_INPUT_KEY	Key;
 	CHAR16		*mInput;
+	CHAR16		*TextInput;
+	CHAR16		*Selection;
+	UINT64		Time;
 
 	Status = InitRoutine();
 
@@ -190,6 +218,67 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 		}
 
 		if (wcsicmp(L"-wait", mInput) == 0) {
+			UINTN RebootCounter;
+			UINTN dataSize;
+
+			PrintdecisionW ();
+			dataSize = sizeof(dataSize);
+			TextInput = L"counter";
+			gRT->GetVariable (TextInput, &VendorGuid, &Atts,
+						&dataSize, &RebootCounter);
+			Print (L"RebootNr: %d\n", RebootCounter);
+			Key.UnicodeChar = 0;
+
+			if ( !ReadKeyBoard (NULL, &Selection, 0) ) {
+				break;
+			}
+
+			Print (L"Input: %s \n", Selection);
+			if ((ShellIsHexOrDecimalNumber(Selection, 0, 1)) == 0) {
+				break;
+			}
+
+			ShellConvertStringToUint64 (Selection, &Time, 0, 1);
+			Print (L"Time chosen: %d s \n", Time);
+
+			if (ShellIsDecimalDigitCharacter(*Selection)) {
+				Print (L"Input is decimal \n");
+			}
+			else if (ShellIsHexaDecimalDigitCharacter(*Selection)) {
+				Print (L"Input is hex \n");
+			}
+
+			if ( Time > 60 ) {
+				Print (L"Please enter a value smaller\
+							than 60. \n", Time);
+				break;
+			}
+
+			Print (L"The System will restart in %d \
+				seconds.\nDo you wish to continue?\n", Time);
+			if (SingleKeyCheck() != 'y') {
+				Print (L"You aborted the restart. \n");
+				break;
+			}
+			while ((Key.ScanCode != SCAN_ESC) && (Time > 0)) {
+				Print (L" Time remaining: %d s \r", Time);
+				gBS->Stall (1000000);
+				Time--;
+				gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
+			}
+			if (Key.ScanCode != SCAN_ESC) {
+				Print (L"System restarts now \n");
+				gBS->Stall (500000);
+				RebootCounter++;
+				gRT->SetVariable (TextInput, &VendorGuid,
+						Atts, dataSize, &RebootCounter);
+				gRT->ResetSystem (EfiResetCold, EFI_SUCCESS,
+								0, NULL);
+			}
+			else {
+				Print (L"Restart was aborted. \n");
+				break;
+			}
 		}
 
 		break;
