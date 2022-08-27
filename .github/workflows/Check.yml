@@ -1,9 +1,6 @@
 name: Build Runner
 
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   check_whitespaces:
@@ -16,28 +13,33 @@ jobs:
 
   start_build:
     runs-on: windows-latest
-    name: Setup environment
+    name: Build Application
     defaults:
       run:
         shell: cmd
     steps:
-    - name: Setup VS Dev Environment
-      uses: seanmiddleditch/gha-setup-vsdevenv@v4
-    - name: Set up NASM
-      uses: ilammy/setup-nasm@v1.3.0
+    - name: Add NASM and DevEnv to PATH
+      uses: nschuetz1311/VisualUefiCompositeAction@main
     - name: Get VisualUefi
       uses: actions/checkout@v3
       with:
        repository: nschuetz1311/VisualUefi
        submodules: 'recursive'
 
+    - name: Get current repo
+      uses: actions/checkout@v3
+      with:
+        path: .\\Applications\\${{ github.event.repository.name }}
+
     # There should be a way to split this process.
     # Maybe by including the Lib-artifatcs, to increase build speed.
-    - name: Build Libs and App
+    - name: Build Libs
       run: |
         cd EDK-II
         devenv EDK-II.sln /build
-        cd ..\\Applications\\${{ github.event.repository.name }}
+    - name: Build App
+      run: |
+        cd Applications\\${{ github.event.repository.name }}
         devenv ${{ github.event.repository.name }}.sln /build
 
     - name: Store artifacts
@@ -50,3 +52,26 @@ jobs:
         path: Applications\\${{ github.event.repository.name }}\\x64\\Release
         if-no-files-found: error
         retention-days: 5
+
+  Create_Release:
+    if: |
+     contains(github.event.head_commit.message, '[release]') &&
+     github.event_name == 'pull_request'
+
+    runs-on: windows-latest
+    name: Create Release
+    needs: 'start_build'
+    defaults:
+      run:
+       shell: cmd
+    steps:
+      - run: echo Test
+      - name: checkout artifacts
+        uses: actions/download-artifact@v3
+        with:
+         name: EfiOutput
+      - name: Upload assets
+        uses: nebula-actions/upload-assets@latest
+        with:
+          asset-path: EfiOutput.zip
+          tag: tag
