@@ -27,20 +27,11 @@ jobs:
        ref: 'SNI_Test'
        submodules: 'recursive'
 
-    - name: Test1@Niko
-      run: |
-        dir
-        cd Applications
-    - name: Get curret repo
+    - name: Get current repo
       uses: actions/checkout@v3
       with:
         path: .\\Applications\\${{ github.event.repository.name }}
-#        repository: nschuetz1311/HelloWorld
-#        ref: 'SNI_Test'
-#        submodules: 'recursive'
-    - name: Test2@Niko
-      run: |
-        dir
+
     # There should be a way to split this process.
     # Maybe by including the Lib-artifatcs, to increase build speed.
     - name: Build Libs
