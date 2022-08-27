@@ -24,7 +24,6 @@ jobs:
       uses: actions/checkout@v3
       with:
        repository: nschuetz1311/VisualUefi
-#        ref: 'SNI_Test'
        submodules: 'recursive'
 
     - name: Get current repo
