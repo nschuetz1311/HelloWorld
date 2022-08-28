@@ -52,26 +52,3 @@ jobs:
         path: Applications\\${{ github.event.repository.name }}\\x64\\Release
         if-no-files-found: error
         retention-days: 5
-
-  Create_Release:
-    if: |
-     contains(github.event.head_commit.message, '[release]')
-
-    runs-on: windows-latest
-    name: Create Release
-    needs: 'start_build'
-    defaults:
-      run:
-       shell: cmd
-    steps:
-      - run: echo Test
-      - name: checkout artifacts
-        uses: actions/download-artifact@v3
-        with:
-         name: EfiOutput
-      - name: Upload assets
-        uses: nebula-actions/upload-assets@master
-        with:
-          asset-path: EfiOutput.zip
-          tag: tag
-
