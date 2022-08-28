@@ -46,8 +46,8 @@ VOID PrintdecisionT (
 			a file \n");
 	Print (L"If you enter r for read the content of the  file will be \
 			displayed. \n");
-	Print (L"If you enter w for write a predetermined value will be written \
-			into the file.txt\n");
+	Print (L"If you enter w for write a predetermined value will be \
+			written into the file.txt\n");
 	Print (L"If you enter c for create a predetermined value will be \
 			written into a newly created txt file \n");
 } // PrintdecisionT
@@ -155,7 +155,7 @@ BOOLEAN ReadKeyBoard (
 		gBS->WaitForEvent (1, &gST->ConIn->WaitForKey, &EventIndex);
 		gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 
-		if (((Exclusion != NULL) && (Key.UnicodeChar != *Exclusion) ) ||
+		if (((Exclusion != NULL) && (Key.UnicodeChar != *Exclusion)) ||
 							(Exclusion == NULL)) {
 			*(*String + Counter) = Key.UnicodeChar;
 			Print (L"%c", *(*String + Counter));
@@ -211,7 +211,7 @@ EFI_STATUS EFIAPI textFunc(
 
 	gST->ConIn->ReadKeyStroke (gST->ConIn, Key);
 
-	while ( Key->ScanCode != SCAN_ESC ) {
+	while (Key->ScanCode != SCAN_ESC) {
 		PrintdecisionT ();
 		TextMode = SingleKeyCheck ();
 
@@ -226,65 +226,68 @@ EFI_STATUS EFIAPI textFunc(
 		}
 
 		Print (L"Please enter the filename.\n");
-		if (ReadKeyBoard (NULL, &Selection, 0)) {
-			StrCat (Selection, L".txt");
-			Print (L"\nFilename is %s \n", Selection);
-            		Status = ShellOpenFileByName (Selection, &File, OpenMode, Attributes);
-			if (Status == 0) {
-				if ( Attributes == 0 ) {
-					Print (L"Please enter your text now.\n");
-						if (ReadKeyBoard (NULL, TextInput, 1)) {
-							*TextInput[0] = 0xfeff;                                                                                                                                                                                                                                  //Header für Unicode
-							InputLength = StrSize (*TextInput);
-							ShellWriteFile (File, &InputLength, *TextInput);
-							ShellCloseFile (&File);
-							Attributes = EFI_FILE_READ_ONLY;
-						}
-				}
-
-				ShellOpenFileByName (Selection, &File, OpenMode, Attributes);
-				ShellGetFileSize (File, &Readsize);
-				gBS->AllocatePool (EfiBootServicesData, (UINTN)(Readsize + sizeof(Output) ), (VOID **)&Output);
-				*(Output + Readsize) = '\0';
-				ShellReadFile (File, (UINTN *)&Readsize, Output);
-				if ((UINT8)*Output == (UINT8)0xFF) {
-					CHAR8 *UnicodeAuslese;
-					Print (L"Die Datei ist in Unicode formatiert\n");
-					gBS->AllocatePool (EfiBootServicesData, (UINTN)(Readsize / 2), (VOID **)&UnicodeAuslese);
-
-					for ( UINTN c = 0, d = 2; c < Readsize; c++, d += 2 ) {                                                                                                                          //die 00 zwischen den chars entsorgen
-						*(UnicodeAuslese + c) = *(Output + d);
-					}
-					gBS->FreePool (Output);
-					Output = UnicodeAuslese;
-				} else {
-					Print (L"Die Datei ist in ANSI formatiert\n");
-				}
-
-				Print (L"Text: %a \n", Output);
-				gBS->FreePool (Output);
-				ShellCloseFile (&File);
-				Key->ScanCode = SCAN_ESC;
-				break;
-			} else {
-				Print (L"This file was not found.\n");
-				Print (L"If you wish to retry press y, \
-					otherwise you can leave the app now.");
-				Key->UnicodeChar = 0;
-				WaitList[0] = gST->ConIn->WaitForKey;
-				Status = gBS->WaitForEvent (1, WaitList, &Index);
-				Status = gST->ConIn->ReadKeyStroke (gST->ConIn, Key);
-				if ( Key->UnicodeChar == L'y' ) {
-					continue;
-				} else {
-					break;
-				}
-			}
-
-			break;
-		} else {
+		if (!ReadKeyBoard (NULL, &Selection, 0)) {
 			continue;
 		}
+
+		StrCat (Selection, L".txt");
+		Print (L"\nFilename is %s \n", Selection);
+		Status = ShellOpenFileByName (Selection, &File, OpenMode,
+								Attributes);
+		if (Status) {
+			Print (L"This file was not found.\n");
+			Print (L"If you wish to retry press y, \
+				otherwise you can leave the app now.");
+			Key->UnicodeChar = 0;
+			WaitList[0] = gST->ConIn->WaitForKey;
+			Status = gBS->WaitForEvent (1, WaitList, &Index);
+			Status = gST->ConIn->ReadKeyStroke (gST->ConIn, Key);
+
+			if (Key->UnicodeChar == L'y') {
+				continue;
+			} else {
+				break;
+			}
+		}
+
+		if (Attributes == 0) {
+			Print (L"Please enter your text now.\n");
+			if (ReadKeyBoard (NULL, TextInput, 1)) {
+				*TextInput[0] = 0xfeff;                                                                                                                                                                                                                                  //Header für Unicode
+				InputLength = StrSize (*TextInput);
+				ShellWriteFile (File, &InputLength, *TextInput);
+				ShellCloseFile (&File);
+				Attributes = EFI_FILE_READ_ONLY;
+			}
+		}
+
+		ShellOpenFileByName (Selection, &File, OpenMode, Attributes);
+		ShellGetFileSize (File, &Readsize);
+		gBS->AllocatePool (EfiBootServicesData, (UINTN)(Readsize +
+					sizeof(Output)), (VOID **)&Output);
+		*(Output + Readsize) = '\0';
+		ShellReadFile (File, (UINTN *)&Readsize, Output);
+		if ((UINT8)*Output == (UINT8)0xFF) {
+			CHAR8 *UnicodeAuslese;
+			Print (L"File format is unicode\n");
+			gBS->AllocatePool (EfiBootServicesData,
+						(UINTN)(Readsize / 2),
+						(VOID **)&UnicodeAuslese);
+
+			for (UINTN c = 0, d = 2; c < Readsize; c++, d += 2) {                                                                                                                          //die 00 zwischen den chars entsorgen
+				*(UnicodeAuslese + c) = *(Output + d);
+			}
+			gBS->FreePool (Output);
+			Output = UnicodeAuslese;
+		} else {
+			Print (L"File format is ANSI\n");
+		}
+
+		Print (L"Text: %a \n", Output);
+		gBS->FreePool (Output);
+		ShellCloseFile (&File);
+		Key->ScanCode = SCAN_ESC;
+		break;
 	}
 	return 0;
 }
@@ -392,7 +395,7 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 	while (Key.ScanCode != SCAN_ESC) {
 		PrintVersion ();
 
-		if ( ReadKeyBoard (NULL, &mInput, 0) ) {
+		if (ReadKeyBoard (NULL, &mInput, 0)) {
 			Print (L"Input: %s \n", mInput);
 		} else {
 			continue;
@@ -402,7 +405,7 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 			if (waitFunc (&TextInput, &Key, Selection, &Time)) {
 				break;
 			}
-		} else if (( wcsicmp (L"-text", mInput) == 0 )) {
+		} else if ((wcsicmp (L"-text", mInput) == 0)) {
 			if (textFunc(&TextInput, &Key, Selection)) {
 				break;
 			}
