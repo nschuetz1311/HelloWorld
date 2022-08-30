@@ -1,6 +1,6 @@
 name: Build Runner
 
-on: 
+on:
   push:
     branches:
       - "**"
