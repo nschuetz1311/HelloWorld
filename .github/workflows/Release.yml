@@ -1,0 +1,82 @@
+name: Release workflow
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  start_build:
+    runs-on: windows-latest
+    name: Build Application
+    defaults:
+      run:
+        shell: cmd
+    steps:
+    - name: Add NASM and DevEnv to PATH
+      uses: nschuetz1311/VisualUefiCompositeAction@main
+    - name: Get VisualUefi
+      uses: actions/checkout@v3
+      with:
+       repository: nschuetz1311/VisualUefi
+       submodules: 'recursive'
+
+    - name: Get current repo
+      uses: actions/checkout@v3
+      with:
+        path: .\\Applications\\${{ github.event.repository.name }}
+
+    # There should be a way to split this process.
+    # Maybe by including the Lib-artifatcs, to increase build speed.
+    - name: Build Libs
+      run: |
+        cd EDK-II
+        devenv EDK-II.sln /build
+    - name: Build App
+      run: |
+        cd Applications\\${{ github.event.repository.name }}
+        devenv ${{ github.event.repository.name }}.sln /build
+
+    - name: Store artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        # Artifact name
+        name: EfiOutput
+        # path to the output file
+        # should use the repo name variable instead of hardcoded name
+        path: Applications\\${{ github.event.repository.name }}\\x64\\Release
+        if-no-files-found: error
+        retention-days: 5
+
+  Release:
+    needs: start_build
+    runs-on: ubuntu-latest
+    name: Release artifacts
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        # Artifact name
+        name: EfiOutput
+    - name: create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          Hello world
+        draft: false
+        prerelease: false
+    - name: upload Release
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ github.event.repository.name }}.efi
+        asset_name: Application.zip
+        asset_content_type: application/zip
