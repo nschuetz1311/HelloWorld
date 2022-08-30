@@ -12,6 +12,7 @@ jobs:
         uses: harupy/find-trailing-whitespace@v1.0
 
   start_build:
+    needs: check_whitespaces
     runs-on: windows-latest
     name: Build Application
     defaults:
