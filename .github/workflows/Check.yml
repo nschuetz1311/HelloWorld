@@ -2,8 +2,10 @@ name: Build Runner
 
 on: 
   push:
-    tags-ignore:
-      - '**'
+    branches:
+      - "**"
+    tags:
+      - '!**'
   pull_request:
 
 jobs:
