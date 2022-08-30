@@ -58,6 +58,10 @@ jobs:
       with:
         # Artifact name
         name: EfiOutput
+    - name: Archive asset_content
+      uses: thedoctor0/zip-release@master
+      with:
+        filename: ${{ github.event.repository.name }}.zip
     - name: create Release
       id: create_release
       uses: actions/create-release@v1
@@ -77,6 +81,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ github.event.repository.name }}.efi
-        asset_name: Application.zip
+        asset_path: ./${{ github.event.repository.name }}.zip
+        asset_name: ${{ github.event.repository.name }}_${{ github.ref }}.zip
         asset_content_type: application/zip
