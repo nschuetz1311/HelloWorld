@@ -17,6 +17,16 @@ jobs:
       - name: Find Trailing Whitespace
         uses: harupy/find-trailing-whitespace@v1.0
 
+
+  c_style_check:
+    runs-on: ubuntu-latest
+    name: Check C Style
+    steps:
+    - name: Checkout this repo
+      uses: actions/checkout@v2
+    - name: Run style checks
+      uses: coleaeason/actions-uncrustify@v1
+
   start_build:
     runs-on: windows-latest
     name: Build Application
