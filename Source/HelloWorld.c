@@ -79,9 +79,10 @@ CHAR16 SingleKeyCheck (
 	VOID
 )
 {
-	EFI_INPUT_KEY Key;
-	UINTN EventIndex;
-	CHAR16 String;
+	EFI_INPUT_KEY	Key;
+	UINTN		EventIndex;
+	CHAR16		String;
+
 	gBS->WaitForEvent (1, &gST->ConIn->WaitForKey, &EventIndex);
 	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 	String = Key.UnicodeChar;
@@ -138,9 +139,9 @@ EFI_STATUS EFIAPI reAllocatepool (
  * @return BOOLEAN
  */
 BOOLEAN ReadKeyBoard (
-	IN CHAR16 *Exclusion,
-	OUT CHAR16 **String,
-	IN UINTN Counter
+	IN CHAR16	*Exclusion,
+	OUT CHAR16	**String,
+	IN UINTN	Counter
 )
 {
 	EFI_INPUT_KEY	Key;
