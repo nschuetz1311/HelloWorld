@@ -23,8 +23,8 @@ STATIC VOID PrintVersion (
 {
 	Print (L"Please choose your program now.\n");
 	Print (L" -reboot --> display the current number of reboots \
-			and let's you reboot the system\n");
-	// Print (L"or you can open/read/create a file,\n");
+			and let's you reboot the system.\n");
+	Print (L" -text   --> open/read/create a file.\n");
 	// Print (L"change the BootOrder by entering move.\n");
 	// Print (L"Get the date and time if you enter watch.\n");
 	// Print (L"Read the Description of the BootXXXX by\
@@ -83,8 +83,8 @@ CHAR16 SingleKeyCheck (
 	VOID
 )
 {
-	UINTN		EventIndex;
-	CHAR16		String;
+	UINTN	EventIndex;
+	CHAR16	String;
 
 	gBS->WaitForEvent (1, &gST->ConIn->WaitForKey, &EventIndex);
 	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
@@ -196,20 +196,21 @@ INTN EFIAPI wcsicmp(
 }
 
 EFI_STATUS EFIAPI textFunc(
-	CHAR16**	TextInput,
-	CHAR16*		Selection
+	VOID
 )
 {
-	unsigned long long	OpenMode;
-	SHELL_FILE_HANDLE	File;
-	EFI_STATUS		Status;
-	EFI_EVENT		WaitList[2];
-	UINT64			Readsize;
-	CHAR16			TextMode;
-	UINTN			InputLength;
-	UINTN			Attributes = 0;
-	CHAR8			*Output;
 	UINTN			Index;
+	UINTN			Attributes = 0;
+	UINTN			InputLength;
+	CHAR8			*Output;
+	CHAR16			*fileName;
+	CHAR16			*KbInput;
+	CHAR16			TextMode;
+	UINT64			Readsize;
+	EFI_EVENT		WaitList[2];
+	EFI_STATUS		Status;
+	SHELL_FILE_HANDLE	File;
+	unsigned long long	OpenMode;
 
 	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 
@@ -228,13 +229,13 @@ EFI_STATUS EFIAPI textFunc(
 		}
 
 		Print (L"Please enter the filename.\n");
-		if (!ReadKeyBoard (NULL, &Selection, 0)) {
+		if (!ReadKeyBoard (NULL, &fileName, 0)) {
 			continue;
 		}
 
-		StrCat (Selection, L".txt");
-		Print (L"\nFilename is %s \n", Selection);
-		Status = ShellOpenFileByName (Selection, &File, OpenMode,
+		StrCat (fileName, L".txt");
+		Print (L"\nFilename is %s \n", fileName);
+		Status = ShellOpenFileByName (fileName, &File, OpenMode,
 								Attributes);
 		if (Status) {
 			Print (L"This file was not found.\n");
@@ -248,22 +249,25 @@ EFI_STATUS EFIAPI textFunc(
 			if (Key.UnicodeChar == L'y') {
 				continue;
 			} else {
+				Print(L"\n");
 				break;
 			}
 		}
 
-		if (Attributes == 0) {
+		if (!Attributes) {
 			Print (L"Please enter your text now.\n");
-			if (ReadKeyBoard (NULL, TextInput, 1)) {
-				*TextInput[0] = 0xfeff;                                                                                                                                                                                                                                  //Header für Unicode
-				InputLength = StrSize (*TextInput);
-				ShellWriteFile (File, &InputLength, *TextInput);
+			if (ReadKeyBoard (NULL, &KbInput, 1)) {
+				StrCat (KbInput, '\0');
+				KbInput[0] = 0xfeff;                                                                                                                                                                                                                                  //Header für Unicode
+				InputLength = StrSize (KbInput);
+				Print(L"InputLength: %d characters\n");
+				ShellWriteFile (File, &InputLength, KbInput);
 				ShellCloseFile (&File);
 				Attributes = EFI_FILE_READ_ONLY;
 			}
 		}
 
-		ShellOpenFileByName (Selection, &File, OpenMode, Attributes);
+		ShellOpenFileByName (fileName, &File, OpenMode, Attributes);
 		ShellGetFileSize (File, &Readsize);
 		gBS->AllocatePool (EfiBootServicesData, (UINTN)(Readsize +
 					sizeof(Output)), (VOID **)&Output);
@@ -286,8 +290,11 @@ EFI_STATUS EFIAPI textFunc(
 		}
 
 		Print (L"Text: %a \n", Output);
-		gBS->FreePool (Output);
-		ShellCloseFile (&File);
+		Status = gBS->FreePool (Output);
+		Print(L"FreePool Status: %r",Status);
+
+		Status = ShellCloseFile (&File);
+		Print(L"CloseFile Status: %r",Status);
 		Key.ScanCode = SCAN_ESC;
 		break;
 	}
@@ -378,7 +385,11 @@ EFI_STATUS EFIAPI rebootFunc(
  * @retval  Other	An error occurred.
  *
  */
-INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
+INTN EFIAPI ShellAppMain(
+	IN UINTN Argc,
+	IN CHAR16 **Argv
+)
+{
 	EFI_STATUS	Status = EFI_SUCCESS;
 	CHAR16		*mInput;
 
@@ -404,12 +415,11 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 			if (rebootFunc ()) {
 				break;
 			}
+		} else if ((wcsicmp (L"-text", mInput) == 0)) {
+			if (textFunc()) {
+				break;
+			}
 		}
-		// else if ((wcsicmp (L"-text", mInput) == 0)) {
-		// 	if (textFunc(&TextInput, &Key, Selection)) {
-		// 		break;
-		// 	}
-		// }
 
 		break;
 	}
