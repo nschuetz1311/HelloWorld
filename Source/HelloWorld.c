@@ -14,19 +14,23 @@ UINT32 Atts = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS
 
 EFI_GUID VendorGuid = EFI_GUID_TEST;
 
+// Global Vars
+EFI_INPUT_KEY Key;
+
 STATIC VOID PrintVersion (
 	VOID
 )
 {
 	Print (L"Please choose your program now.\n");
-	Print (L"You can either decide to reboot the system,\n");
-	Print (L"or you can open/read/create a file,\n");
-	Print (L"change the BootOrder by entering move.\n");
-	Print (L"Get the date and time if you enter watch.\n");
-	Print (L"Read the Description of the BootXXXX by\
-			choosing the boot option.\n");
-	Print (L"to reboot please enter -wait, to modify a txt\
-			file -text and so on...\n");
+	Print (L" -reboot --> display the current number of reboots \
+			and let's you reboot the system\n");
+	// Print (L"or you can open/read/create a file,\n");
+	// Print (L"change the BootOrder by entering move.\n");
+	// Print (L"Get the date and time if you enter watch.\n");
+	// Print (L"Read the Description of the BootXXXX by\
+	// 		choosing the boot option.\n");
+	// Print (L"to reboot please enter -wait, to modify a txt\
+	// 		file -text and so on...\n");
 }
 
 VOID PrintdecisionW (
@@ -79,7 +83,6 @@ CHAR16 SingleKeyCheck (
 	VOID
 )
 {
-	EFI_INPUT_KEY	Key;
 	UINTN		EventIndex;
 	CHAR16		String;
 
@@ -87,7 +90,7 @@ CHAR16 SingleKeyCheck (
 	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 	String = Key.UnicodeChar;
 	return (String);
-} // SingleKeyCheck
+}
 
 /**
  * @brief		reAllocatepool
@@ -128,7 +131,7 @@ EFI_STATUS EFIAPI reAllocatepool (
 	Array = &Temp;
 
 	return (Status);
-} // reAllocatepool
+}
 
 /**
  * @brief
@@ -144,9 +147,8 @@ BOOLEAN ReadKeyBoard (
 	IN UINTN	Counter
 )
 {
-	EFI_INPUT_KEY	Key;
-	UINTN		Size = 10;
-	UINTN		EventIndex;
+	UINTN	Size = 10;
+	UINTN	EventIndex;
 
 	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 	gBS->AllocatePool (EfiBootServicesData, Size, (VOID **)String);
@@ -183,7 +185,7 @@ BOOLEAN ReadKeyBoard (
 		gBS->FreePool ((VOID *)String);
 		return (FALSE);
 	}
-} // ReadKeyBoard
+}
 
 INTN EFIAPI wcsicmp(
 	IN CHAR16 *Str1,
@@ -195,7 +197,6 @@ INTN EFIAPI wcsicmp(
 
 EFI_STATUS EFIAPI textFunc(
 	CHAR16**	TextInput,
-	EFI_INPUT_KEY*	Key,
 	CHAR16*		Selection
 )
 {
@@ -210,9 +211,9 @@ EFI_STATUS EFIAPI textFunc(
 	CHAR8			*Output;
 	UINTN			Index;
 
-	gST->ConIn->ReadKeyStroke (gST->ConIn, Key);
+	gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 
-	while (Key->ScanCode != SCAN_ESC) {
+	while (Key.ScanCode != SCAN_ESC) {
 		PrintdecisionT ();
 		TextMode = SingleKeyCheck ();
 
@@ -239,12 +240,12 @@ EFI_STATUS EFIAPI textFunc(
 			Print (L"This file was not found.\n");
 			Print (L"If you wish to retry press y, \
 				otherwise you can leave the app now.");
-			Key->UnicodeChar = 0;
+			Key.UnicodeChar = 0;
 			WaitList[0] = gST->ConIn->WaitForKey;
 			Status = gBS->WaitForEvent (1, WaitList, &Index);
-			Status = gST->ConIn->ReadKeyStroke (gST->ConIn, Key);
+			Status = gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 
-			if (Key->UnicodeChar == L'y') {
+			if (Key.UnicodeChar == L'y') {
 				continue;
 			} else {
 				break;
@@ -287,81 +288,82 @@ EFI_STATUS EFIAPI textFunc(
 		Print (L"Text: %a \n", Output);
 		gBS->FreePool (Output);
 		ShellCloseFile (&File);
-		Key->ScanCode = SCAN_ESC;
+		Key.ScanCode = SCAN_ESC;
 		break;
 	}
 	return 0;
 }
 
-EFI_STATUS EFIAPI waitFunc(
-	CHAR16**	TextInput,
-	EFI_INPUT_KEY*	Key,
-	CHAR16*		Selection,
-	UINT64*		Time
+EFI_STATUS EFIAPI rebootFunc(
+	VOID
 )
 {
-	UINTN RebootCounter;
+	EFI_STATUS Status;
+	UINTN rebootCounter;
 	UINTN dataSize;
+	CHAR16	*rebootCounterString = L"RebootCounter";
+	CHAR16	*KbInput;
+	UINT64	Time;
+
+	dataSize = sizeof(dataSize);
+
+	Status = gRT->GetVariable (rebootCounterString, &VendorGuid, &Atts,
+				&dataSize, &rebootCounter);
+	if (Status == EFI_NOT_FOUND) {
+		rebootCounter = 0;
+		Status = gRT->SetVariable (rebootCounterString, &VendorGuid,
+					Atts, dataSize, &rebootCounter);
+	}
+
+	Print (L"RebootNr: %d\n", rebootCounter);
+	Key.UnicodeChar = 0;
 
 	PrintdecisionW ();
-	dataSize = sizeof(dataSize);
-	*TextInput = L"counter";
-	gRT->GetVariable (*TextInput, &VendorGuid, &Atts,
-				&dataSize, &RebootCounter);
-	Print (L"RebootNr: %d\n", RebootCounter);
-	Key->UnicodeChar = 0;
 
-	if (!ReadKeyBoard (NULL, &Selection, 0)) {
+	if (!ReadKeyBoard (NULL, &KbInput, 0)) {
 		return 1;
 	}
 
-	Print (L"Input: %s \n", Selection);
-	if ((ShellIsHexOrDecimalNumber(Selection, 0, 1)) == 0) {
+	if ((ShellIsHexOrDecimalNumber (KbInput, 0, 1)) == 0) {
 		return 1;
 	}
 
-	ShellConvertStringToUint64 (Selection, Time, 0, 1);
-	Print (L"Time chosen: %d s \n", *Time);
+	ShellConvertStringToUint64 (KbInput, &Time, FALSE, TRUE);
+	Print (L"Time chosen: %d s \n", Time);
 
-	if (ShellIsDecimalDigitCharacter(*Selection)) {
-		Print (L"Input is decimal \n");
-	} else if (ShellIsHexaDecimalDigitCharacter(*Selection)) {
-		Print (L"Input is hex \n");
-	}
-
-	if (*Time > 60) {
+	if (Time > 60) {
 		Print (L"Please enter a value smaller than 60.\n");
 		return 1;
 	}
 
 	Print (L"The System will restart in %d seconds.\
-		\nDo you wish to continue?\n", *Time);
+		\nDo you wish to continue?\n", Time);
 
 	if (SingleKeyCheck() != 'y') {
 		Print (L"You aborted the restart. \n");
 		return 1;
 	}
 
-	while ((Key->ScanCode != SCAN_ESC) && (*Time > 0)) {
-		Print (L" Time remaining: %d s \r", *Time);
+	while ((Key.ScanCode != SCAN_ESC) && (Time > 0)) {
+		Print (L" Time remaining: %d s \r", Time);
 		gBS->Stall (1000000);
-		*Time--;
-		gST->ConIn->ReadKeyStroke (gST->ConIn, Key);
+		Time--;
+		gST->ConIn->ReadKeyStroke (gST->ConIn, &Key);
 	}
 
-	if (Key->ScanCode != SCAN_ESC) {
+	if (Key.ScanCode != SCAN_ESC) {
 		Print (L"System restarts now \n");
 		gBS->Stall (500000);
-		RebootCounter++;
-		gRT->SetVariable (*TextInput, &VendorGuid, Atts,
-						dataSize, &RebootCounter);
+		rebootCounter++;
+		gRT->SetVariable (KbInput, &VendorGuid, Atts,
+						dataSize, &rebootCounter);
 		gRT->ResetSystem (EfiResetCold, EFI_SUCCESS, 0, NULL);
 	} else {
 		Print (L"Restart was aborted. \n");
 		return 1;
 	}
 
-	return 0;
+	return Status;
 }
 
 /**
@@ -378,11 +380,7 @@ EFI_STATUS EFIAPI waitFunc(
  */
 INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 	EFI_STATUS	Status = EFI_SUCCESS;
-	EFI_INPUT_KEY	Key;
 	CHAR16		*mInput;
-	CHAR16		*TextInput;
-	CHAR16		*Selection = NULL;
-	UINT64		Time;
 
 	Status = InitRoutine();
 
@@ -402,15 +400,16 @@ INTN EFIAPI ShellAppMain(IN UINTN Argc, IN CHAR16 **Argv) {
 			continue;
 		}
 
-		if (wcsicmp(L"-wait", mInput) == 0) {
-			if (waitFunc (&TextInput, &Key, Selection, &Time)) {
-				break;
-			}
-		} else if ((wcsicmp (L"-text", mInput) == 0)) {
-			if (textFunc(&TextInput, &Key, Selection)) {
+		if (wcsicmp(L"-reboot", mInput) == 0) {
+			if (rebootFunc ()) {
 				break;
 			}
 		}
+		// else if ((wcsicmp (L"-text", mInput) == 0)) {
+		// 	if (textFunc(&TextInput, &Key, Selection)) {
+		// 		break;
+		// 	}
+		// }
 
 		break;
 	}
